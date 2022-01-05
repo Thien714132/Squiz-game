@@ -15,10 +15,10 @@ import * as Clipboard from "expo-clipboard";
 import Counter from "react-native-counters";
 import { io } from "socket.io-client";
 import config from "../config";
-import { data } from "./data";
 import axios from "axios";
 
 const socket = io(`${config.URL}`, { jsonp: false });
+
 const content = [
   {
     question: "1+1=?",
@@ -51,6 +51,12 @@ const content = [
   },
 ];
 
+const data = [
+  {
+      name: 'DDuy'
+  }
+]
+
 export default class createRoom extends Component {
   constructor(props) {
     super(props);
@@ -61,32 +67,21 @@ export default class createRoom extends Component {
       Time: 5,
       idUser: "",
       user: "",
+      
     };
   }
 
-//   getUserName() {
-//     var self = this;
-//     var name = "";
-//     axios
-//       .get(`${config.URL}/api/players/${self.state.idUser}`)
-//       .then(function (res) {
-//         //console.log(res.data)
-//         // self.setState({user : res.data.name})
-//         name = res.data.name;
-//         console.log("b: " + name);
-//       })
-//       .catch(function (error) {
-//         console.log(error);
-//       });
-
-//     console.log("c: " + this.state.idUser);
-//   }
+  // data =[
+  //   {
+  //     name: `${this.state.user}`,
+  //   }
+  // ]
 
   getUserName() {
     var self = this;
     AsyncStorage.getItem("id_user").then((id_user) => {
       this.setState({ idUser: id_user });
-    //   console.log("a: " + this.state.idUser);
+      console.log("a: " + this.state.idUser);
 
       axios
         .get(`${config.URL}/api/players/${id_user}`)
@@ -101,14 +96,18 @@ export default class createRoom extends Component {
     });
   }
 
-  componentDidMount() {
+  UNSAFE_componentWillMount() {
     this.getUserName();
-    // this.getUserName();
   }
 
+
   getRoomData() {
-    socket.on("leftRoom", (data) => {
+    socket.on("roomCreated", (data) => {
       console.log(data);
+      AsyncStorage.setItem("id_room", data).then(() => {
+        this.props.navigation.navigate('lobby');
+        AsyncStorage.setItem("numberOfPlayer", JSON.stringify(this.state.Players))
+      })
     });
     // console.log(this.state.data)
   }
@@ -154,22 +153,6 @@ export default class createRoom extends Component {
             style={styles.backBt}
           ></Image>
         </TouchableOpacity>
-
-        <View style={styles.idRoomContainer}>
-          <View style={{ alignItems: "center", flexDirection: "row" }}>
-            <Text style={styles.idRoomText}>ID: </Text>
-            <Text style={styles.idRoomText}>{this.state.idRoom}</Text>
-          </View>
-          <TouchableOpacity
-            style={{ alignItems: "center" }}
-            onPress={() => Clipboard.setString(this.state.idRoom)}
-          >
-            <Image
-              source={require("../image/copy.png")}
-              style={{ height: 20, width: 20, tintColor: "#9ba9ba" }}
-            />
-          </TouchableOpacity>
-        </View>
 
         <LinearGradient
           colors={["#FFB397", "#F46AA0"]}
@@ -254,18 +237,13 @@ export default class createRoom extends Component {
           >
             <TouchableOpacity
               style={styles.button}
-              onPress={() => this.postRoomData()}
-            >
+              onPress={() => {this.postRoomData()
+                              this.getRoomData()
+                              AsyncStorage.setItem("listPlayer", JSON.stringify(data))}}>
               <Text style={styles.buttonText}>CREATE</Text>
             </TouchableOpacity>
           </LinearGradient>
         </LinearGradient>
-        <TouchableOpacity
-          style={{ backgroundColor: "red" }}
-          onPress={() => this.getRoomData()}
-        >
-          <Text>Hello</Text>
-        </TouchableOpacity>
       </ImageBackground>
     );
   }
@@ -294,6 +272,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignSelf: "center",
     elevation: 5,
+    marginTop: 30
   },
 
   idRoomContainer: {
